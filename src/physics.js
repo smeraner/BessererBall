@@ -64,6 +64,8 @@ export class BallWorld {
     this.time = 0;
     this.lastDrop = -Infinity;
     this.score = 0n;
+    this.earnedPoints = 0n;
+    this.dropTier = 0;
     this.largestTier = 0;
     this.dropCount = 0;
     this.expansions = 0;
@@ -112,25 +114,40 @@ export class BallWorld {
 
   get canDrop() { return this.time - this.lastDrop >= 280; }
 
+  get upgradeCost() { return 1000n * 2n ** BigInt(this.dropTier); }
+
+  get canUpgrade() { return this.score >= this.upgradeCost; }
+
+  buyUpgrade() {
+    if (!this.canUpgrade) return false;
+    this.score -= this.upgradeCost;
+    this.dropTier++;
+    this.ensureSpace();
+    return true;
+  }
+
   drop(fraction = 0.5) {
     if (!this.canDrop) return null;
     this.ensureSpace();
-    const x = (Math.min(1, Math.max(0, fraction)) - 0.5) * (this.width - BASE_RADIUS * 2 - 8);
-    const y = -this.height - BASE_RADIUS - 18;
-    const ball = this.addBall(0, x, y);
+    const radius = radiusForTier(this.dropTier);
+    const x = (Math.min(1, Math.max(0, fraction)) - 0.5) * (this.width - radius * 2 - 8);
+    const y = -this.height - radius - 18;
+    const ball = this.addBall(this.dropTier, x, y);
+    this.largestTier = Math.max(this.largestTier, this.dropTier);
     this.lastDrop = this.time;
     this.dropCount++;
     return ball;
   }
 
   ensureSpace() {
-    let requiredWidth = this.width;
+    const dropRadius = radiusForTier(this.dropTier);
+    let requiredWidth = Math.max(this.width, dropRadius * 5.5);
     let highest = 0;
     for (const ball of this.balls.values()) {
       requiredWidth = Math.max(requiredWidth, ball.radius * 5.5);
       if (ball.entered) highest = Math.min(highest, ball.body.position.y - ball.radius);
     }
-    const requiredHeight = Math.max(this.height, -highest + BASE_RADIUS * 5);
+    const requiredHeight = Math.max(this.height, -highest + dropRadius * 5, dropRadius * 6);
     if (requiredWidth > this.width || requiredHeight > this.height) {
       this.grow(Math.max(this.width * 1.22, requiredWidth), Math.max(this.height * 1.22, requiredHeight));
     }
@@ -179,6 +196,7 @@ export class BallWorld {
     ball.entered = a.entered || b.entered;
     const points = 2n ** BigInt(tier);
     this.score += points;
+    this.earnedPoints += points;
     this.largestTier = Math.max(this.largestTier, tier);
     this.onMerge({ ball, tier, points, x: ball.body.position.x, y: ball.body.position.y });
     return ball;

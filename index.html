@@ -34,7 +34,7 @@
             <section class="score-card">
               <div class="card-label"><span class="tiny-star">✦</span> DEINE PUNKTE</div>
               <div class="score-value" id="score">0</div>
-              <div class="score-caption">Jede Verbindung zählt.</div>
+              <div class="score-caption">Für größere Würfe ausgeben.</div>
               <div class="record-row"><span id="record-icon" aria-hidden="true"></span><span>Dein Rekord</span><strong id="best-score">0</strong></div>
             </section>
             <section class="largest-card">
@@ -60,11 +60,16 @@
               <button class="drop-button" id="drop-button"><span id="drop-icon"></span> Ball abwerfen <kbd>LEER</kbd></button>
               <span class="keyboard-hint"><kbd>←</kbd><kbd>→</kbd><span>zum Zielen</span></span>
             </div>
+            <section class="upgrade-card" aria-label="Wurf verbessern">
+              <span class="css-ball upgrade-ball" id="upgrade-ball" aria-hidden="true"></span>
+              <div class="upgrade-copy"><strong id="upgrade-level">Wurf: Stufe 1 → 2</strong><span id="upgrade-hint">Noch 1.000 Punkte bis zum Upgrade</span></div>
+              <button class="upgrade-button" id="upgrade-button" disabled><span>Verbessern ↑</span><strong id="upgrade-cost">1.000 ✦</strong></button>
+            </section>
             <p class="touch-hint">Tippen oder ziehen & loslassen, um einen Ball abzuwerfen.</p>
           </section>
 
           <aside class="guide-column">
-            <section class="next-card"><div class="card-label">DEIN NÄCHSTER WURF</div><div class="next-ball-wrap"><span class="css-ball next-ball"></span><span class="next-ball-shadow"></span></div><strong>Klein, aber voller Potenzial.</strong><p>Jeder Wurf ist ein neuer Anfang.</p></section>
+            <section class="next-card"><div class="card-label">DEIN NÄCHSTER WURF</div><div class="next-ball-wrap"><span class="css-ball next-ball" id="next-ball"></span><span class="next-ball-shadow"></span></div><strong id="next-name">Der Anfang · Stufe 1</strong><p>Mit Upgrades wird dein Wurf größer.</p></section>
             <section class="how-card"><div class="card-label">AUS ZWEI WIRD MEHR</div><div class="merge-example" aria-label="Zwei rote Bälle werden zu einem größeren orangefarbenen Ball"><span class="css-ball red-ball"></span><span>+</span><span class="css-ball red-ball"></span><span class="merge-arrow">→</span><span class="css-ball orange-ball"></span></div><p>Treffen sich zwei Bälle <strong>derselben Farbe</strong>, werden sie zu einem größeren Ball.</p><div class="tip-line"><span>↗</span> Denk groß. Fang klein an.</div></section>
             <section class="journey-card"><div class="card-label">DIE REISE GEHT WEITER</div><div class="journey-balls" id="journey-balls"></div><div class="journey-labels"><span>Klein anfangen</span><span>∞ weiterwachsen</span></div></section>
           </aside>
@@ -74,8 +79,18 @@
       <footer><span>Mit Schwerkraft & ein bisschen Magie.</span><span>Gemacht zum Abschalten<span class="footer-dot">●</span></span></footer>
     </div>
 
-    <dialog id="help-dialog"><button class="dialog-close icon-button" id="close-help" aria-label="Anleitung schließen">×</button><span class="eyebrow">GANZ EINFACH</span><h2>Ein Wurf. Viele Möglichkeiten.</h2><ol><li><strong>Such dir einen Platz.</strong><br />Bewege die Vorschau mit ← und →, der Maus oder deinem Finger.</li><li><strong>Lass den Ball fallen.</strong><br />Tippe ins Feld, ziehe und lasse los, drücke die Leertaste oder „Ball abwerfen“.</li><li><strong>Verbinde gleiche Farben.</strong><br />Zwei gleiche Bälle werden zu einem größeren. Das gibt Punkte!</li><li><strong>Wachse immer weiter.</strong><br />Die Wanne wächst mit. Es gibt kein Zeitlimit, kein Game over und keine letzte Stufe.</li></ol><p class="dialog-footnote">P pausiert. Dein Punkterekord bleibt in diesem Browser gespeichert. Ton ist freiwillig.</p><button class="primary-button" id="help-play">Los geht’s <span>→</span></button></dialog>
-    <dialog id="restart-dialog"><span class="eyebrow">NOCH MAL VON KLEIN</span><h2>Platz für einen neuen Anfang?</h2><p>Die aktuellen Bälle und Punkte werden zurückgesetzt. Dein Rekord bleibt erhalten.</p><div class="dialog-actions"><button class="secondary-button" id="cancel-restart">Weiterspielen</button><button class="primary-button" id="confirm-restart">Neu starten <span>↻</span></button></div></dialog>
+    <dialog id="help-dialog">
+      <button class="dialog-close icon-button" id="close-help" aria-label="Anleitung schließen">×</button><span class="eyebrow">GANZ EINFACH</span><h2>Ein Wurf. Viele Möglichkeiten.</h2>
+      <ol>
+        <li><strong>Such dir einen Platz.</strong><br />Bewege die Vorschau mit ← und →, der Maus oder deinem Finger.</li>
+        <li><strong>Lass den Ball fallen.</strong><br />Tippe ins Feld, ziehe und lasse los, drücke die Leertaste oder „Ball abwerfen“.</li>
+        <li><strong>Verbinde gleiche Farben.</strong><br />Zwei gleiche Bälle werden zu einem größeren. Das gibt Punkte!</li>
+        <li><strong>Kauf dir größere Würfe.</strong><br />„Verbessern“ kostet erst 1.000, dann 2.000, 4.000 Punkte usw. Jeder Kauf erhöht die Stufe deiner folgenden Würfe. Die Punkte werden abgezogen; dein Rekord zählt alle erspielten Punkte.</li>
+        <li><strong>Wachse immer weiter.</strong><br />Die Wanne wächst mit. Es gibt kein Zeitlimit, kein Game over und keine letzte Stufe.</li>
+      </ol>
+      <p class="dialog-footnote">P pausiert. Dein Punkterekord bleibt in diesem Browser gespeichert. Neustart setzt die Upgrades zurück. Ton ist freiwillig.</p><button class="primary-button" id="help-play">Los geht’s <span>→</span></button>
+    </dialog>
+    <dialog id="restart-dialog"><span class="eyebrow">NOCH MAL VON KLEIN</span><h2>Platz für einen neuen Anfang?</h2><p>Die aktuellen Bälle, Punkte und Wurf-Upgrades werden zurückgesetzt. Dein Rekord bleibt erhalten.</p><div class="dialog-actions"><button class="secondary-button" id="cancel-restart">Weiterspielen</button><button class="primary-button" id="confirm-restart">Neu starten <span>↻</span></button></div></dialog>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

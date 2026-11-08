@@ -1,10 +1,12 @@
 # Besserer Ball
 
-Ein endloses Browser-Spiel mit **PixiJS 8** und **Matter.js**. Gleiche Farben verschmelzen zu größeren Bällen. Jeder neue Wurf ist der kleinste rote Ball. Es gibt keine letzte Stufe und kein Game over: Wenn der Platz knapp wird, wächst die Wanne und die Ansicht zoomt heraus.
+Ein endloses Browser-Spiel mit **PixiJS 8** und **Matter.js**. Bunte Kugeln mit zwölf lustigen Gesichtern verschmelzen bei gleicher Farbe zu größeren Bällen. Du beginnst mit kleinen roten Bällen und kannst mit Punkten größere Würfe kaufen. Es gibt keine letzte Stufe und kein Game over: Wenn der Platz knapp wird, wächst die Wanne und die Ansicht zoomt heraus.
 
 **[Jetzt im Browser spielen](https://smeraner.github.io/BessererBall/)** · [GitHub-Projekt](https://github.com/smeraner/BessererBall)
 
 ![Spielvorschau](docs/vorschau.jpg)
+
+![Zwölf lustige Kugelgesichter](docs/gesichter.jpg)
 
 ## Lokal starten
 
@@ -30,6 +32,7 @@ Auf dem Smartphone im selben WLAN die unter `Network` angezeigte Adresse verwend
 | Neustart | Neustart-Knopf und im Dialog bestätigen |
 | Ton | Lautsprecher oben rechts; standardmäßig aus |
 | Anleitung | Fragezeichen oben rechts |
+| Größere Würfe kaufen | „Verbessern“ unter dem Spielfeld |
 
 ## Spielregeln
 
@@ -37,6 +40,8 @@ Auf dem Smartphone im selben WLAN die unter `Network` angezeigte Adresse verwend
 - Die Fläche des neuen Balls entspricht der Summe der beiden alten Kreisflächen. Der Radius wächst deshalb jeweils um den Faktor √2.
 - Masse und linearer Impuls werden bei der Verschmelzung übernommen. Matter.js simuliert Schwerkraft, Rotation, Reibung, Kollisionen und das Abprallen. Die Simulation läuft mit festen Schritten von 1/120 Sekunde.
 - Eine Verschmelzung zu Stufe 2 bringt 2 Punkte, zu Stufe 3 bringt 4 Punkte usw. Punkte verwenden `BigInt`.
+- Das erste Wurf-Upgrade kostet 1.000 Punkte, das nächste 2.000, dann 4.000, 8.000 usw. Der Preis verdoppelt sich ohne feste Obergrenze. Jeder Kauf zieht den Preis vom verfügbaren Punktestand ab und erhöht die Stufe aller folgenden Würfe um eins. Vorhandene Bälle bleiben erhalten. Vorschau, Zielhilfe und Wurfphysik passen sich an die neue Größe an.
+- Der Rekord zählt die insgesamt erspielten Punkte einer Runde, auch wenn Punkte für Upgrades ausgegeben wurden. Neustart und Neuladen setzen die Wurf-Upgrades zurück.
 - Der Punkterekord und die Toneinstellung bleiben lokal in diesem Browser erhalten. Ein Neustart löscht den Rekord nicht. Der laufende Spielstand wird beim Neuladen zurückgesetzt.
 - Neue Bälle lassen sich alle 280 Millisekunden abwerfen. Pause, Dialoge und ein ausgeblendeter Browser-Tab unterbrechen die Simulation.
 - Der Behälter wächst bei Platzbedarf; vorhandene Bälle behalten ihre Größe in der Physikwelt. Die Ansicht passt sich an. Es werden keine Bälle wegen Überfüllung entfernt.
@@ -64,6 +69,7 @@ Unter **Settings → Pages → Build and deployment** ist **GitHub Actions** als
 - `src/main.js`: Oberfläche, Eingaben, Rekord und Spielablauf
 - `src/physics.js`: Matter.js-Simulation und Regeln
 - `src/view.js`: PixiJS-Darstellung, Glanztexturen, Zielhilfe und Effekte
+- `src/ball-art.js`: gemeinsame Glanztexturen und zwölf Gesichter für Spielfeld und Vorschauen
 - `src/audio.js`: dezente, lokal erzeugte Web-Audio-Klänge
 - `src/style.css`: responsive Oberfläche und reduzierte Animationen
 - `test/physics.test.js`: automatisierte Physiktests

@@ -9,7 +9,7 @@ function near(actual, expected, tolerance = 1e-6) {
   assert.ok(Math.abs(actual - expected) < tolerance, `${actual} should be near ${expected}`);
 }
 
-test('every drop starts with the smallest ball; input is clamped and rapid drops are limited', () => {
+test('before upgrades, drops start with the smallest ball; input is clamped and rapid drops are limited', () => {
   const world = new BallWorld();
   const ball = world.drop(-10);
   assert.equal(ball.tier, 0);
@@ -142,4 +142,72 @@ test('repeated throws stay finite and contained; reset clears the previous physi
   assert.equal(world.expansions, 0);
   assert.equal(world.width, 460);
   assert.ok(world.drop());
+});
+
+test('an upgrade requires enough points and cannot overdraw the balance', () => {
+  const world = new BallWorld();
+  assert.equal(world.upgradeCost, 1000n);
+  assert.equal(world.canUpgrade, false);
+  world.score = 999n;
+  assert.equal(world.buyUpgrade(), false);
+  assert.equal(world.score, 999n);
+  assert.equal(world.dropTier, 0);
+  world.score = 1000n;
+  world.earnedPoints = 1000n;
+  assert.equal(world.buyUpgrade(), true);
+  assert.equal(world.score, 0n);
+  assert.equal(world.earnedPoints, 1000n);
+  assert.equal(world.buyUpgrade(), false);
+  assert.equal(world.dropTier, 1);
+});
+
+test('successive upgrades cost 1000, 2000, 4000 and double beyond safe integer limits', () => {
+  const world = new BallWorld();
+  world.score = 7000n;
+  world.earnedPoints = 7000n;
+  for (const cost of [1000n, 2000n, 4000n]) {
+    assert.equal(world.upgradeCost, cost);
+    assert.equal(world.buyUpgrade(), true);
+  }
+  assert.equal(world.dropTier, 3);
+  assert.equal(world.score, 0n);
+  assert.equal(world.earnedPoints, 7000n);
+  assert.equal(world.upgradeCost, 8000n);
+  world.dropTier = 60;
+  assert.equal(world.upgradeCost, 1000n * 2n ** 60n);
+});
+
+test('upgraded balls use the new radius, stay inside the walls and merge normally', () => {
+  const world = new BallWorld();
+  world.score = 3000n;
+  world.earnedPoints = 3000n;
+  const original = world.drop(0);
+  assert.equal(world.buyUpgrade(), true);
+  assert.equal(world.buyUpgrade(), true);
+  assert.equal(original.tier, 0);
+  advance(world, 2);
+  const upgraded = world.drop(1);
+  assert.equal(upgraded.tier, 2);
+  near(upgraded.radius, radiusForTier(2));
+  assert.ok(upgraded.body.position.x + upgraded.radius < world.width / 2);
+  advance(world, 3);
+  const next = world.drop(1);
+  advance(world, 4);
+  assert.ok(!world.balls.has(next.body.id));
+  assert.ok([...world.balls.values()].some((ball) => ball.tier === 3));
+  assert.equal(world.score, 8n);
+  assert.equal(world.earnedPoints, 3008n);
+});
+
+test('a restart clears upgrades and lifetime round points as well as the balance', () => {
+  const world = new BallWorld();
+  world.score = 1000n;
+  world.earnedPoints = 1000n;
+  world.buyUpgrade();
+  world.reset();
+  assert.equal(world.dropTier, 0);
+  assert.equal(world.score, 0n);
+  assert.equal(world.earnedPoints, 0n);
+  assert.equal(world.upgradeCost, 1000n);
+  assert.equal(world.drop().tier, 0);
 });

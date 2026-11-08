@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, Sprite, Texture, Text } from 'pixi.js';
-import { appearance, BASE_RADIUS } from './physics.js';
+import { appearance, radiusForTier } from './physics.js';
+import { ballCanvas } from './ball-art.js';
 
 export class BallView {
   constructor(surface, world) {
@@ -42,35 +43,7 @@ export class BallView {
 
   textureFor(tier) {
     if (this.textures.has(tier)) return this.textures.get(tier);
-    const palette = appearance(tier);
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx.createRadialGradient(86, 67, 7, 137, 137, 155);
-    gradient.addColorStop(0, palette.light);
-    gradient.addColorStop(0.48, palette.color);
-    gradient.addColorStop(1, palette.dark);
-    ctx.beginPath();
-    ctx.arc(128, 128, 123, 0, Math.PI * 2);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    ctx.strokeStyle = palette.dark;
-    ctx.globalAlpha = 0.15;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    const gloss = ctx.createLinearGradient(60, 40, 118, 93);
-    gloss.addColorStop(0, '#ffffffa6');
-    gloss.addColorStop(1, '#ffffff00');
-    ctx.fillStyle = gloss;
-    ctx.beginPath();
-    ctx.ellipse(85, 65, 39, 20, -0.6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff45';
-    ctx.beginPath();
-    ctx.ellipse(193, 186, 6, 15, 0.65, 0, Math.PI * 2);
-    ctx.fill();
-    const texture = Texture.from(canvas);
+    const texture = Texture.from(ballCanvas(tier));
     this.textures.set(tier, texture);
     return texture;
   }
@@ -83,7 +56,7 @@ export class BallView {
     if (!this.camera) return 0.5;
     const rect = this.surface.getBoundingClientRect();
     const worldX = (clientX - rect.left - this.camera.cx) / this.camera.scale;
-    return Math.min(1, Math.max(0, worldX / (this.world.width - BASE_RADIUS * 2 - 8) + 0.5));
+    return Math.min(1, Math.max(0, worldX / (this.world.width - radiusForTier(this.world.dropTier) * 2 - 8) + 0.5));
   }
 
   mergeEffect(event, label) {
@@ -152,20 +125,22 @@ export class BallView {
       // Lighting stays top-left; rotations are deliberately not applied to the gloss.
     }
 
-    const x = (aim - 0.5) * (this.world.width - BASE_RADIUS * 2 - 8);
-    const previewWorldY = -this.world.height - BASE_RADIUS - 18;
+    const dropRadius = radiusForTier(this.world.dropTier);
+    const x = (aim - 0.5) * (this.world.width - dropRadius * 2 - 8);
+    const previewWorldY = -this.world.height - dropRadius - 18;
     const preview = this.point(x, previewWorldY);
-    const previewSize = Math.max(8, BASE_RADIUS * 2 * s);
+    const previewSize = Math.max(8, dropRadius * 2 * s);
+    this.preview.texture = this.textureFor(this.world.dropTier);
     this.preview.position.set(preview.x, preview.y);
     this.preview.width = this.preview.height = previewSize;
     this.preview.alpha = ready ? 1 : 0.35;
-    let hitY = -BASE_RADIUS;
+    let hitY = -dropRadius;
     for (const ball of this.world.balls.values()) {
       const dx = x - ball.body.position.x;
-      const sumR = ball.radius + BASE_RADIUS;
+      const sumR = ball.radius + dropRadius;
       if (Math.abs(dx) < sumR) {
         const contact = ball.body.position.y - Math.sqrt(sumR * sumR - dx * dx);
-        if (contact > previewWorldY + BASE_RADIUS * 2) hitY = Math.min(hitY, contact);
+        if (contact > previewWorldY + dropRadius * 2) hitY = Math.min(hitY, contact);
       }
     }
     const hit = this.point(x, hitY);
@@ -174,7 +149,8 @@ export class BallView {
       for (let y = preview.y + previewSize / 2 + 13; y < hit.y - previewSize / 2 - 6; y += 10) {
         guide.moveTo(preview.x, y).lineTo(preview.x, y + 3).stroke({ color: 0xd4c4dd, alpha: 0.65, width: 1.3, cap: 'round' });
       }
-      guide.circle(hit.x, hit.y, BASE_RADIUS * s).fill({ color: 0xf4777c, alpha: 0.08 }).stroke({ color: 0xf4777c, alpha: 0.18, width: 1 });
+      const previewColor = appearance(this.world.dropTier).color;
+      guide.circle(hit.x, hit.y, dropRadius * s).fill({ color: previewColor, alpha: 0.08 }).stroke({ color: previewColor, alpha: 0.18, width: 1 });
       guide.moveTo(preview.x - 3, preview.y - previewSize / 2 - 13).lineTo(preview.x, preview.y - previewSize / 2 - 10).lineTo(preview.x + 3, preview.y - previewSize / 2 - 13).stroke({ color: 0xb0a0bd, width: 1, cap: 'round', join: 'round' });
     }
     this.emptyLabel.visible = this.world.dropCount === 0;

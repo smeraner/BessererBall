@@ -4,6 +4,7 @@ import './style.css';
 import { BallWorld, appearance, STEP_MS } from './physics.js';
 import { BallView } from './view.js';
 import { GameAudio } from './audio.js';
+import { ballImage, FACE_NAMES } from './ball-art.js';
 
 const $ = (id) => document.getElementById(id);
 const icons = {
@@ -63,10 +64,9 @@ const world = new BallWorld({
 let highestShown = 0;
 
 function paintBall(element, tier) {
-  const palette = appearance(tier);
-  element.style.setProperty('--ball-color', palette.color);
-  element.style.setProperty('--ball-light', palette.light);
-  element.style.setProperty('--ball-dark', palette.dark);
+  element.classList.add('with-face');
+  element.style.backgroundImage = `url("${ballImage(tier)}")`;
+  element.title = `Stufe ${tier + 1} · ${FACE_NAMES[tier % FACE_NAMES.length]}`;
 }
 function updateStats() {
   $('score').textContent = formatPoints(world.score);
@@ -75,8 +75,8 @@ function updateStats() {
   $('score').classList.remove('score-bump');
   void $('score').offsetWidth;
   $('score').classList.add('score-bump');
-  if (world.score > best) {
-    best = world.score;
+  if (world.earnedPoints > best) {
+    best = world.earnedPoints;
     storage.set('besserer-ball.best', best.toString());
   }
   $('best-score').textContent = formatPoints(best);
@@ -91,6 +91,18 @@ function updateStats() {
     ball.classList.toggle('unlocked', Number(ball.dataset.tier) <= world.largestTier);
     ball.classList.toggle('current', Number(ball.dataset.tier) === world.largestTier);
   }
+  updateUpgrade();
+}
+function updateUpgrade() {
+  paintBall($('upgrade-ball'), world.dropTier + 1);
+  paintBall($('next-ball'), world.dropTier);
+  $('next-ball').style.width = $('next-ball').style.height = `${Math.min(76, 46 + world.dropTier * 5)}px`;
+  $('next-name').textContent = `${appearance(world.dropTier).name} · Stufe ${world.dropTier + 1}`;
+  $('upgrade-level').textContent = `Wurf: Stufe ${world.dropTier + 1} → ${world.dropTier + 2}`;
+  $('upgrade-cost').textContent = `${formatPoints(world.upgradeCost)} ✦`;
+  $('upgrade-button').setAttribute('aria-label', `Wurf auf Stufe ${world.dropTier + 2} verbessern für ${world.upgradeCost.toLocaleString('de-DE')} Punkte`);
+  $('upgrade-button').disabled = !view || userPaused || modalOpen || !world.canUpgrade;
+  $('upgrade-hint').textContent = world.canUpgrade ? 'Bereit für größere Würfe!' : `Noch ${formatPoints(world.upgradeCost - world.score)} Punkte bis zum Upgrade`;
 }
 function showMessage(text, duration) {
   $('board-message').textContent = text;
@@ -109,6 +121,7 @@ function updatePause() {
   $('pause-button').setAttribute('aria-label', userPaused ? 'Spiel fortsetzen' : 'Spiel pausieren');
   $('pause-button').title = userPaused ? 'Weiterspielen (P)' : 'Pause (P)';
   $('drop-button').disabled = userPaused || modalOpen || !view;
+  $('upgrade-button').disabled = userPaused || modalOpen || !view || !world.canUpgrade;
   heldKeys.clear();
   pointer = null;
   accumulator = 0;
@@ -119,6 +132,7 @@ function drop() {
   audio.unlock();
   if (world.drop(aim)) {
     audio.drop();
+    updateStats();
     if (world.dropCount === 1) showMessage('Wunderbar! Triff jetzt die gleiche Farbe.', 3400);
   }
 }
@@ -148,6 +162,7 @@ async function start() {
   $('record-icon').innerHTML = icon('trophy');
   $('drop-icon').innerHTML = icon('drop');
   updateSound();
+  for (const ball of document.querySelectorAll('.css-ball')) paintBall(ball, ball.classList.contains('orange-ball') ? 1 : 0);
   for (let tier = 0; tier < 7; tier++) {
     const ball = document.createElement('span');
     ball.className = 'css-ball';
@@ -183,6 +198,13 @@ async function start() {
   $('close-help').addEventListener('click', () => closeDialog('help-dialog'));
   $('help-play').addEventListener('click', () => closeDialog('help-dialog'));
   $('drop-button').addEventListener('click', drop);
+  $('upgrade-button').addEventListener('click', () => {
+    if (userPaused || modalOpen || !world.buyUpgrade()) return;
+    audio.unlock();
+    audio.merge(world.dropTier);
+    updateStats();
+    showMessage(`Wurf verbessert! Ab jetzt wirfst du Bälle der Stufe ${world.dropTier + 1}.`, 4200);
+  });
   for (const id of ['help-dialog', 'restart-dialog']) {
     $(id).addEventListener('close', () => { modalOpen = false; updatePause(); });
     $(id).addEventListener('click', (event) => { if (event.target === $(id)) {
@@ -254,6 +276,7 @@ async function start() {
       }
     }
     $('drop-button').disabled = !running || !world.canDrop;
+    $('upgrade-button').disabled = !running || !world.canUpgrade;
     view.render(running ? delta : 0, aim, running && world.canDrop);
     requestAnimationFrame(frame);
   }
