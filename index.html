@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f6f5f1" />
+    <meta name="description" content="Kleine Bälle, große Freude: Lass bunte Bälle fallen, verschmelze gleiche Farben und wachse immer weiter. Ein endloses Physikspiel." />
+    <title>Besserer Ball — Lass etwas Großes entstehen.</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <a class="brand" href="./" aria-label="Besserer Ball Startseite">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+          besserer ball<span class="brand-dot">.</span>
+        </a>
+        <div class="header-actions">
+          <span class="endless-note"><span></span> Ein Spiel. Unendlich Möglichkeiten.</span>
+          <button class="icon-button" id="sound-button" aria-label="Ton einschalten" aria-pressed="false" title="Ton einschalten"></button>
+          <button class="icon-button" id="help-button" aria-label="Spielanleitung öffnen" title="So geht’s"></button>
+        </div>
+      </header>
+
+      <main>
+        <div class="intro">
+          <span class="eyebrow">KLEINE BÄLLE. GROSSE FREUDE.</span>
+          <h1>Lass etwas <span>Großes</span> entstehen<span class="title-dot">.</span></h1>
+          <p>Einfach fallen lassen. Gleiche Farben verbinden. Immer weiter wachsen.</p>
+        </div>
+
+        <div class="game-layout">
+          <aside class="score-column" aria-label="Spielstatistik">
+            <section class="score-card">
+              <div class="card-label"><span class="tiny-star">✦</span> DEINE PUNKTE</div>
+              <div class="score-value" id="score">0</div>
+              <div class="score-caption">Jede Verbindung zählt.</div>
+              <div class="record-row"><span id="record-icon" aria-hidden="true"></span><span>Dein Rekord</span><strong id="best-score">0</strong></div>
+            </section>
+            <section class="largest-card">
+              <div class="card-label">DEIN GRÖSSTER BALL</div>
+              <div class="largest-visual"><span class="css-ball" id="largest-ball"></span><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="visual-star">✧</span></div>
+              <strong id="largest-name">Der Anfang</strong>
+              <span class="muted" id="largest-level">Stufe 1 · Alles beginnt klein</span>
+            </section>
+            <div class="relax-note"><span aria-hidden="true">∞</span><p>Kein Zeitlimit. Kein Game over.<br /><strong>Nur du und der nächste Ball.</strong></p></div>
+          </aside>
+
+          <section class="play-column" aria-label="Ballspiel">
+            <div class="board-card" id="board-card">
+              <div class="board-toolbar"><span><i class="live-dot"></i> DEINE SPIELWIESE</span><span class="mode-pill">∞ ENDLOS</span></div>
+              <div id="game-surface" role="application" aria-label="Spielfeld. Mit links und rechts zielen, mit Leertaste oder dem Abwurfknopf werfen. Auf dem Bildschirm tippen oder ziehen und loslassen." tabindex="0">
+                <div class="loading" id="loading"><span class="loading-ball"></span>Die Bälle machen sich bereit …</div>
+              </div>
+              <div class="board-message" id="board-message" aria-live="polite">Dein erster großer Ball beginnt mit einem kleinen Wurf.</div>
+              <div class="pause-overlay" id="pause-overlay" hidden><span class="pause-art">Ⅱ</span><h2>Kleine Verschnaufpause.</h2><p>Deine Bälle warten auf dich.</p><button class="primary-button" id="resume-button">Weiterspielen <span>→</span></button></div>
+            </div>
+            <div class="game-controls">
+              <div class="utility-controls"><button class="control-button" id="pause-button" aria-label="Spiel pausieren" title="Pause (P)"></button><button class="control-button" id="restart-button" aria-label="Neu starten" title="Neu starten"></button></div>
+              <button class="drop-button" id="drop-button"><span id="drop-icon"></span> Ball abwerfen <kbd>LEER</kbd></button>
+              <span class="keyboard-hint"><kbd>←</kbd><kbd>→</kbd><span>zum Zielen</span></span>
+            </div>
+            <p class="touch-hint">Tippen oder ziehen & loslassen, um einen Ball abzuwerfen.</p>
+          </section>
+
+          <aside class="guide-column">
+            <section class="next-card"><div class="card-label">DEIN NÄCHSTER WURF</div><div class="next-ball-wrap"><span class="css-ball next-ball"></span><span class="next-ball-shadow"></span></div><strong>Klein, aber voller Potenzial.</strong><p>Jeder Wurf ist ein neuer Anfang.</p></section>
+            <section class="how-card"><div class="card-label">AUS ZWEI WIRD MEHR</div><div class="merge-example" aria-label="Zwei rote Bälle werden zu einem größeren orangefarbenen Ball"><span class="css-ball red-ball"></span><span>+</span><span class="css-ball red-ball"></span><span class="merge-arrow">→</span><span class="css-ball orange-ball"></span></div><p>Treffen sich zwei Bälle <strong>derselben Farbe</strong>, werden sie zu einem größeren Ball.</p><div class="tip-line"><span>↗</span> Denk groß. Fang klein an.</div></section>
+            <section class="journey-card"><div class="card-label">DIE REISE GEHT WEITER</div><div class="journey-balls" id="journey-balls"></div><div class="journey-labels"><span>Klein anfangen</span><span>∞ weiterwachsen</span></div></section>
+          </aside>
+        </div>
+        <div class="bottom-note"><span>✦</span> Manchmal braucht es nur einen kleinen Anstoß.</div>
+      </main>
+      <footer><span>Mit Schwerkraft & ein bisschen Magie.</span><span>Gemacht zum Abschalten<span class="footer-dot">●</span></span></footer>
+    </div>
+
+    <dialog id="help-dialog"><button class="dialog-close icon-button" id="close-help" aria-label="Anleitung schließen">×</button><span class="eyebrow">GANZ EINFACH</span><h2>Ein Wurf. Viele Möglichkeiten.</h2><ol><li><strong>Such dir einen Platz.</strong><br />Bewege die Vorschau mit ← und →, der Maus oder deinem Finger.</li><li><strong>Lass den Ball fallen.</strong><br />Tippe ins Feld, ziehe und lasse los, drücke die Leertaste oder „Ball abwerfen“.</li><li><strong>Verbinde gleiche Farben.</strong><br />Zwei gleiche Bälle werden zu einem größeren. Das gibt Punkte!</li><li><strong>Wachse immer weiter.</strong><br />Die Wanne wächst mit. Es gibt kein Zeitlimit, kein Game over und keine letzte Stufe.</li></ol><p class="dialog-footnote">P pausiert. Dein Punkterekord bleibt in diesem Browser gespeichert. Ton ist freiwillig.</p><button class="primary-button" id="help-play">Los geht’s <span>→</span></button></dialog>
+    <dialog id="restart-dialog"><span class="eyebrow">NOCH MAL VON KLEIN</span><h2>Platz für einen neuen Anfang?</h2><p>Die aktuellen Bälle und Punkte werden zurückgesetzt. Dein Rekord bleibt erhalten.</p><div class="dialog-actions"><button class="secondary-button" id="cancel-restart">Weiterspielen</button><button class="primary-button" id="confirm-restart">Neu starten <span>↻</span></button></div></dialog>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "besserer-ball",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ein endloses, buntes Ballspiel mit PixiJS und Matter.js.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "matter-js": "^0.20.0",
+    "pixi.js": "^8.0.0"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}
