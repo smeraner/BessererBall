@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f6f5f1" />
-    <meta name="description" content="Kleine Bälle, große Freude: Lass bunte Bälle fallen, verschmelze gleiche Farben und wachse immer weiter. Ein endloses Physikspiel." />
+    <meta name="description" content="Kleine Bälle, große Freude: Lass bunte Bälle fallen, verschmelze gleiche Farben und sammle Punkte, bevor das Spielfeld voll ist." />
     <title>Besserer Ball — Lass etwas Großes entstehen.</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
@@ -43,17 +43,18 @@
               <strong id="largest-name">Der Anfang</strong>
               <span class="muted" id="largest-level">Stufe 1 · Alles beginnt klein</span>
             </section>
-            <div class="relax-note"><span aria-hidden="true">∞</span><p>Kein Zeitlimit. Kein Game over.<br /><strong>Nur du und der nächste Ball.</strong></p></div>
+            <div class="relax-note"><span aria-hidden="true">✧</span><p>Kein Zeitlimit. Dein Platz zählt.<br /><strong>Verbinde Bälle, bevor es voll wird.</strong></p></div>
           </aside>
 
           <section class="play-column" aria-label="Ballspiel">
             <div class="board-card" id="board-card">
-              <div class="board-toolbar"><span><i class="live-dot"></i> DEINE SPIELWIESE</span><span class="mode-pill">∞ ENDLOS</span></div>
+              <div class="board-toolbar"><span><i class="live-dot"></i> DEINE SPIELWIESE</span><span class="mode-pill">FESTES FELD</span></div>
               <div id="game-surface" role="application" aria-label="Spielfeld. Mit links und rechts zielen, mit Leertaste oder dem Abwurfknopf werfen. Auf dem Bildschirm tippen oder ziehen und loslassen." tabindex="0">
                 <div class="loading" id="loading"><span class="loading-ball"></span>Die Bälle machen sich bereit …</div>
               </div>
               <div class="board-message" id="board-message" aria-live="polite">Dein erster großer Ball beginnt mit einem kleinen Wurf.</div>
               <div class="pause-overlay" id="pause-overlay" hidden><span class="pause-art">Ⅱ</span><h2>Kleine Verschnaufpause.</h2><p>Deine Bälle warten auf dich.</p><button class="primary-button" id="resume-button">Weiterspielen <span>→</span></button></div>
+              <div class="pause-overlay game-over-overlay" id="game-over-overlay" role="region" aria-labelledby="game-over-title" hidden><h2 id="game-over-title">Das Spielfeld ist voll.</h2><p>Du hast <strong id="game-over-score">0</strong> Punkte erspielt.<br />Dein Rekord bleibt gespeichert.</p><button class="primary-button" id="game-over-restart">Neue Runde <span>↻</span></button></div>
             </div>
             <div class="game-controls">
               <div class="utility-controls"><button class="control-button" id="pause-button" aria-label="Spiel pausieren" title="Pause (P)"></button><button class="control-button" id="restart-button" aria-label="Neu starten" title="Neu starten"></button></div>
@@ -86,7 +87,7 @@
         <li><strong>Lass den Ball fallen.</strong><br />Tippe ins Feld, ziehe und lasse los, drücke die Leertaste oder „Ball abwerfen“.</li>
         <li><strong>Verbinde gleiche Farben.</strong><br />Zwei gleiche Bälle werden zu einem größeren. Das gibt Punkte!</li>
         <li><strong>Kauf dir größere Würfe.</strong><br />„Verbessern“ kostet erst 1.000, dann 2.000, 4.000 Punkte usw. Jeder Kauf erhöht die Stufe deiner folgenden Würfe. Die Punkte werden abgezogen; dein Rekord zählt alle erspielten Punkte.</li>
-        <li><strong>Wachse immer weiter.</strong><br />Die Wanne wächst mit. Es gibt kein Zeitlimit, kein Game over und keine letzte Stufe.</li>
+        <li><strong>Nutze deinen Platz.</strong><br />Das Spielfeld bleibt gleich groß. Ragt ein Ball länger als 1,5 Sekunden über den Rand, endet die Runde. Neue Würfe bekommen zunächst Zeit zum Hineinfallen. Ein Ball, der größer als das Spielfeld ist, beendet die Runde sofort.</li>
       </ol>
       <p class="dialog-footnote">P pausiert. Dein Punkterekord bleibt in diesem Browser gespeichert. Neustart setzt die Upgrades zurück. Ton ist freiwillig.</p><button class="primary-button" id="help-play">Los geht’s <span>→</span></button>
     </dialog>

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BallWorld, BASE_RADIUS, STEP_MS, appearance, radiusForTier } from '../src/physics.js';
+import Matter from 'matter-js';
+import { BallWorld, BASE_RADIUS, STEP_MS, OVERFLOW_GRACE_MS, appearance, radiusForTier } from '../src/physics.js';
 
 function advance(world, seconds) {
   for (let i = 0; i < seconds * 1000 / STEP_MS; i++) world.step();
@@ -20,13 +21,15 @@ test('before upgrades, drops start with the smallest ball; input is clamped and 
   assert.equal(world.drop(10).tier, 0);
 });
 
-test('gravity settles a ball above a solid floor without expanding an empty tub', () => {
+test('gravity settles a ball above a solid floor in a fixed tub', () => {
   const world = new BallWorld();
   const ball = world.drop();
   advance(world, 6);
+  assert.equal(world.gameOver, false);
   assert.ok(ball.body.position.y < 0);
   near(ball.body.position.y, -BASE_RADIUS, 0.8);
-  assert.equal(world.expansions, 0);
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 510);
   assert.ok(Number.isFinite(ball.body.position.y));
 });
 
@@ -85,8 +88,9 @@ test('merging preserves area, exact mass and linear momentum', () => {
   near(merged.body.velocity.y * merged.body.mass, momentum.y);
 });
 
-test('growth continues beyond the initial colour palette without a maximum stage', () => {
+test('merges beyond the initial colour palette keep the field dimensions and walls unchanged', () => {
   const world = new BallWorld();
+  const walls = [...world.walls];
   const a = world.addBall(12, -10, -1500);
   const b = world.addBall(12, 10, -1500);
   const ball = world.merge(a, b);
@@ -94,22 +98,26 @@ test('growth continues beyond the initial colour palette without a maximum stage
   assert.equal(world.largestTier, 13);
   assert.equal(world.score, 8192n);
   near(ball.radius, radiusForTier(13));
-  assert.ok(world.width > ball.radius * 5);
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 510);
+  assert.deepEqual(world.walls, walls);
   assert.notEqual(appearance(12).color, appearance(13).color);
 });
 
-test('a crowded tub expands while keeping balls and score', () => {
+test('a crowded tub keeps its dimensions, balls and score during simulation and drops', () => {
   const world = new BallWorld();
-  const ball = world.addBall(0, 0, -world.height + 30);
-  ball.entered = true;
-  const oldHeight = world.height;
-  world.ensureSpace();
-  assert.ok(world.height > oldHeight);
+  world.addBall(1, 0, -world.height + 30);
+  world.step();
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 510);
   assert.equal(world.balls.size, 1);
   assert.equal(world.score, 0n);
+  assert.ok(world.drop());
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 510);
 });
 
-test('a shallow laptop tub still merges, grows when needed and resets to its original shape', () => {
+test('a shallow laptop tub still merges and keeps its original shape through a restart', () => {
   const world = new BallWorld({ initialHeight: 260 });
   for (let i = 0; i < 8; i++) { world.drop(); advance(world, 1.5); }
   advance(world, 3);
@@ -117,7 +125,8 @@ test('a shallow laptop tub still merges, grows when needed and resets to its ori
   // Balls can roll apart: total material must survive even without a perfect chain.
   assert.equal([...world.balls.values()].reduce((sum, ball) => sum + 2n ** BigInt(ball.tier), 0n), 8n);
   assert.ok(world.score > 0n);
-  world.grow();
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 260);
   world.reset();
   assert.equal(world.height, 260);
 });
@@ -139,7 +148,6 @@ test('repeated throws stay finite and contained; reset clears the previous physi
   assert.equal(world.score, 0n);
   assert.equal(world.balls.size, 0);
   assert.equal(world.dropCount, 0);
-  assert.equal(world.expansions, 0);
   assert.equal(world.width, 460);
   assert.ok(world.drop());
 });
@@ -210,4 +218,112 @@ test('a restart clears upgrades and lifetime round points as well as the balance
   assert.equal(world.earnedPoints, 0n);
   assert.equal(world.upgradeCost, 1000n);
   assert.equal(world.drop().tier, 0);
+});
+
+test('large drop upgrades keep the field dimensions and walls unchanged', () => {
+  const world = new BallWorld({ initialHeight: 260 });
+  const walls = [...world.walls];
+  world.score = 255000n;
+  for (let i = 0; i < 8; i++) assert.equal(world.buyUpgrade(), true);
+  assert.equal(world.dropTier, 8);
+  assert.equal(world.score, 0n);
+  assert.equal(world.drop(), null);
+  assert.equal(world.gameOver, true);
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 260);
+  assert.deepEqual(world.walls, walls);
+});
+
+function holdAboveRim(world, ball, milliseconds) {
+  for (let elapsed = 0; elapsed < milliseconds; elapsed += STEP_MS) {
+    Matter.Body.setPosition(ball.body, { x: 0, y: -world.height + ball.radius - 8 });
+    Matter.Body.setVelocity(ball.body, { x: 0, y: 0 });
+    world.step();
+  }
+}
+
+test('sustained overflow ends the round once, freezes physics and blocks throws and purchases', () => {
+  let endings = 0;
+  const world = new BallWorld({ onGameOver: () => endings++ });
+  const ball = world.addBall(0, 0, -100);
+  world.step();
+  holdAboveRim(world, ball, OVERFLOW_GRACE_MS - 100);
+  assert.equal(world.gameOver, false);
+  holdAboveRim(world, ball, 200);
+  assert.equal(world.gameOver, true);
+  assert.equal(endings, 1);
+  const position = { ...ball.body.position };
+  const time = world.time;
+  world.score = 1000n;
+  advance(world, 3);
+  world.endGame();
+  assert.equal(world.time, time);
+  assert.deepEqual(ball.body.position, position);
+  assert.equal(world.canDrop, false);
+  assert.equal(world.drop(), null);
+  assert.equal(world.buyUpgrade(), false);
+  assert.equal(world.score, 1000n);
+  assert.equal(endings, 1);
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 510);
+});
+
+test('temporary overflow clears after a ball falls back inside', () => {
+  const world = new BallWorld();
+  const ball = world.addBall(0, 0, -100);
+  world.step();
+  holdAboveRim(world, ball, 1000);
+  Matter.Body.setPosition(ball.body, { x: 0, y: -100 });
+  world.step();
+  assert.equal(ball.overflowMs, 0);
+  holdAboveRim(world, ball, 1000);
+  assert.equal(world.gameOver, false);
+});
+
+test('a fresh throw above a full tub eventually ends the round even if it cannot enter', () => {
+  const world = new BallWorld();
+  const ball = world.drop();
+  holdAboveRim(world, ball, 2200);
+  assert.equal(world.gameOver, false);
+  assert.equal(ball.entered, false);
+  holdAboveRim(world, ball, 1600);
+  assert.equal(world.gameOver, true);
+});
+
+test('merges resolve before checking overflow and can clear space at the rim', () => {
+  const world = new BallWorld();
+  const a = world.addBall(0, 0, -world.height + 9);
+  const b = world.addBall(0, 0, -world.height + 42);
+  a.entered = true;
+  a.overflowMs = OVERFLOW_GRACE_MS - STEP_MS;
+  world.step();
+  assert.equal(world.balls.size, 1);
+  assert.equal(world.gameOver, false);
+  assert.equal(world.score, 2n);
+});
+
+test('a merged ball too large for the tub ends the round without enlarging it', () => {
+  const world = new BallWorld({ initialHeight: 260 });
+  world.addBall(6, -10, -140);
+  world.addBall(6, 10, -140);
+  world.step();
+  assert.equal(world.largestTier, 7);
+  assert.equal(world.gameOver, true);
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 260);
+});
+
+test('restart after game over clears overflow, upgrades and score and allows play again', () => {
+  const world = new BallWorld();
+  world.score = 1000n;
+  world.buyUpgrade();
+  world.endGame();
+  world.reset();
+  assert.equal(world.gameOver, false);
+  assert.equal(world.dropTier, 0);
+  assert.equal(world.score, 0n);
+  assert.equal(world.balls.size, 0);
+  assert.ok(world.drop());
+  advance(world, 3);
+  assert.equal(world.gameOver, false);
 });

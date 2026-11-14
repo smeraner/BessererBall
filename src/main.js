@@ -59,7 +59,14 @@ const world = new BallWorld({
       showMessage(`Stufe ${event.tier + 1}! ${appearance(event.tier).name} — und es geht noch größer.`, 3600);
     }
   },
-  onGrow() { showMessage('Mehr Platz für große Ideen. Deine Wanne wächst mit!', 4200); },
+  onGameOver() {
+    $('game-over-score').textContent = formatPoints(world.earnedPoints);
+    $('board-message').textContent = 'Das Spielfeld ist voll. Zeit für eine neue Runde.';
+    messageUntil = 0;
+    userPaused = false;
+    updatePause();
+    $('game-over-restart').focus({ preventScroll: true });
+  },
 });
 let highestShown = 0;
 
@@ -102,7 +109,7 @@ function updateUpgrade() {
   $('upgrade-cost').textContent = `${formatPoints(world.upgradeCost)} ✦`;
   $('upgrade-button').setAttribute('aria-label', `Wurf auf Stufe ${world.dropTier + 2} verbessern für ${world.upgradeCost.toLocaleString('de-DE')} Punkte`);
   $('upgrade-button').disabled = !view || userPaused || modalOpen || !world.canUpgrade;
-  $('upgrade-hint').textContent = world.canUpgrade ? 'Bereit für größere Würfe!' : `Noch ${formatPoints(world.upgradeCost - world.score)} Punkte bis zum Upgrade`;
+  $('upgrade-hint').textContent = world.gameOver ? 'Runde beendet. Starte eine neue Runde.' : world.canUpgrade ? 'Bereit für größere Würfe!' : `Noch ${formatPoints(world.upgradeCost - world.score)} Punkte bis zum Upgrade`;
 }
 function showMessage(text, duration) {
   $('board-message').textContent = text;
@@ -116,17 +123,19 @@ function updateSound() {
   $('sound-button').title = audio.enabled ? 'Ton ausschalten' : 'Ton einschalten';
 }
 function updatePause() {
-  $('pause-overlay').hidden = !userPaused || modalOpen;
+  $('pause-overlay').hidden = !userPaused || modalOpen || world.gameOver;
+  $('game-over-overlay').hidden = !world.gameOver || modalOpen;
+  $('pause-button').disabled = world.gameOver;
   $('pause-button').innerHTML = icon(userPaused ? 'play' : 'pause');
   $('pause-button').setAttribute('aria-label', userPaused ? 'Spiel fortsetzen' : 'Spiel pausieren');
   $('pause-button').title = userPaused ? 'Weiterspielen (P)' : 'Pause (P)';
-  $('drop-button').disabled = userPaused || modalOpen || !view;
+  $('drop-button').disabled = userPaused || modalOpen || !view || !world.canDrop;
   $('upgrade-button').disabled = userPaused || modalOpen || !view || !world.canUpgrade;
   heldKeys.clear();
   pointer = null;
   accumulator = 0;
 }
-function setPaused(value) { userPaused = value; updatePause(); }
+function setPaused(value) { if (world.gameOver) return; userPaused = value; updatePause(); }
 function drop() {
   if (userPaused || modalOpen || !view) return;
   audio.unlock();
@@ -154,6 +163,8 @@ function restart() {
   updateStats();
   userPaused = false;
   closeDialog('restart-dialog');
+  updatePause();
+  $('game-surface').focus({ preventScroll: true });
 }
 
 async function start() {
@@ -194,6 +205,7 @@ async function start() {
   $('restart-button').addEventListener('click', () => openDialog('restart-dialog'));
   $('cancel-restart').addEventListener('click', () => closeDialog('restart-dialog'));
   $('confirm-restart').addEventListener('click', restart);
+  $('game-over-restart').addEventListener('click', restart);
   $('help-button').addEventListener('click', () => openDialog('help-dialog'));
   $('close-help').addEventListener('click', () => closeDialog('help-dialog'));
   $('help-play').addEventListener('click', () => closeDialog('help-dialog'));
@@ -215,7 +227,7 @@ async function start() {
 
   const surface = $('game-surface');
   surface.addEventListener('pointerdown', (event) => {
-    if (userPaused || modalOpen || !event.isPrimary || event.button !== 0) return;
+    if (userPaused || modalOpen || world.gameOver || !event.isPrimary || event.button !== 0) return;
     event.preventDefault();
     surface.focus({ preventScroll: true });
     surface.setPointerCapture(event.pointerId);
@@ -224,7 +236,7 @@ async function start() {
     audio.unlock();
   });
   surface.addEventListener('pointermove', (event) => {
-    if (userPaused || modalOpen) return;
+    if (userPaused || modalOpen || world.gameOver) return;
     if (event.pointerType === 'mouse' || pointer === event.pointerId) aim = view.aimFromClient(event.clientX);
   });
   surface.addEventListener('pointerup', (event) => {
@@ -238,7 +250,7 @@ async function start() {
   surface.addEventListener('lostpointercapture', () => { pointer = null; });
 
   window.addEventListener('keydown', (event) => {
-    if (modalOpen || event.target.closest('input,textarea,select,[contenteditable]')) return;
+    if (modalOpen || world.gameOver || event.target.closest('input,textarea,select,[contenteditable]')) return;
     if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
       event.preventDefault();
       if (!userPaused) {
@@ -263,12 +275,13 @@ async function start() {
   function frame(now) {
     const delta = previousTime ? Math.min((now - previousTime) / 1000, 0.05) : 1 / 60;
     previousTime = now;
-    const running = !userPaused && !modalOpen && !document.hidden;
+    let running = !userPaused && !modalOpen && !world.gameOver && !document.hidden;
     if (running) {
       const direction = Number(heldKeys.has('ArrowRight')) - Number(heldKeys.has('ArrowLeft'));
       aim = Math.max(0, Math.min(1, aim + direction * delta * 0.7));
       accumulator += delta * 1000;
-      while (accumulator >= STEP_MS) { world.step(STEP_MS); accumulator -= STEP_MS; }
+      while (accumulator >= STEP_MS && !world.gameOver) { accumulator -= STEP_MS; world.step(STEP_MS); }
+      running = !world.gameOver;
       if (messageUntil && world.time > messageUntil) {
         $('board-message').textContent = 'Gleiche Farbe. Doppelte Freude. Und immer ein bisschen größer.';
         $('board-message').classList.remove('accent');

@@ -1,6 +1,6 @@
 # Besserer Ball
 
-Ein endloses Browser-Spiel mit **PixiJS 8** und **Matter.js**. Bunte Kugeln mit zwölf lustigen Gesichtern verschmelzen bei gleicher Farbe zu größeren Bällen. Du beginnst mit kleinen roten Bällen und kannst mit Punkten größere Würfe kaufen. Es gibt keine letzte Stufe und kein Game over: Wenn der Platz knapp wird, wächst die Wanne und die Ansicht zoomt heraus.
+Ein Browser-Spiel mit **PixiJS 8** und **Matter.js**. Bunte Kugeln mit zwölf lustigen Gesichtern verschmelzen bei gleicher Farbe zu größeren Bällen. Du beginnst mit kleinen roten Bällen und kannst mit Punkten größere Würfe kaufen. Das Spielfeld behält während der Runde seine ursprüngliche Größe. Bei Überfüllung endet die Runde; anschließend kannst du direkt neu starten.
 
 **[Jetzt im Browser spielen](https://smeraner.github.io/BessererBall/)** · [GitHub-Projekt](https://github.com/smeraner/BessererBall)
 
@@ -44,7 +44,9 @@ Auf dem Smartphone im selben WLAN die unter `Network` angezeigte Adresse verwend
 - Der Rekord zählt die insgesamt erspielten Punkte einer Runde, auch wenn Punkte für Upgrades ausgegeben wurden. Neustart und Neuladen setzen die Wurf-Upgrades zurück.
 - Der Punkterekord und die Toneinstellung bleiben lokal in diesem Browser erhalten. Ein Neustart löscht den Rekord nicht. Der laufende Spielstand wird beim Neuladen zurückgesetzt.
 - Neue Bälle lassen sich alle 280 Millisekunden abwerfen. Pause, Dialoge und ein ausgeblendeter Browser-Tab unterbrechen die Simulation.
-- Der Behälter wächst bei Platzbedarf; vorhandene Bälle behalten ihre Größe in der Physikwelt. Die Ansicht passt sich an. Es werden keine Bälle wegen Überfüllung entfernt.
+- Breite und Höhe des Behälters bleiben während der Runde fest. Verschmelzungen, Wurf-Upgrades und Platzmangel vergrößern das Spielfeld nicht; die Ansicht zoomt dabei nicht heraus. Die Oberfläche passt sich weiterhin an die Bildschirmgröße an.
+- Ragt ein Ball länger als 1,5 Sekunden über den oberen Rand, endet die Runde. Neue Würfe haben zunächst zwei Sekunden Zeit zum Hineinfallen; sobald sie ganz im Feld waren, gilt die normale Überfüllungsprüfung. Sinkt ein Ball rechtzeitig zurück, beginnt seine Frist beim nächsten Überstand neu. Verschmelzungen werden vor der Prüfung aufgelöst. Ein Ball, dessen Durchmesser die Breite oder Höhe des Feldes überschreitet, beendet die Runde sofort; ein zu großer Wurf wird nicht mehr erzeugt.
+- Nach dem Spielende stoppen Physik, Abwürfe und Upgrades. Die Anzeige zeigt die insgesamt erspielten Rundenpunkte und bietet „Neue Runde“ an. Der gespeicherte Rekord bleibt erhalten.
 
 ## Prüfen und bauen
 
@@ -54,7 +56,7 @@ npm run build
 npm run preview
 ```
 
-`npm test` prüft echte Physiksimulationen einschließlich Verschmelzungen, Kettenreaktionen, Massenerhaltung, Begrenzung, Wachstum und Neustart. `npm run build` erzeugt die fertige statische Anwendung in `dist/`. Diese Dateien können über einen beliebigen statischen Webserver ausgeliefert werden; `index.html` nicht direkt per Doppelklick öffnen.
+`npm test` prüft echte Physiksimulationen einschließlich Verschmelzungen, Kettenreaktionen, Massenerhaltung, Begrenzung, gleichbleibender Spielfeldgröße und Neustart. `npm run build` erzeugt die fertige statische Anwendung in `dist/`. Diese Dateien können über einen beliebigen statischen Webserver ausgeliefert werden; `index.html` nicht direkt per Doppelklick öffnen.
 
 Schriftarten und Bibliotheken werden mit der Anwendung gebündelt. Nach der Installation benötigt das laufende Spiel keine externen Dienste, Konten oder API-Schlüssel. Die erste Installation benötigt Internet. Ein aktueller Browser mit WebGL ist erforderlich.
 

@@ -3,6 +3,8 @@ import Matter from 'matter-js';
 const { Engine, Bodies, Body, Composite, Events } = Matter;
 export const BASE_RADIUS = 17;
 export const STEP_MS = 1000 / 120;
+export const OVERFLOW_GRACE_MS = 1500;
+const DROP_ENTRY_GRACE_MS = 2000;
 
 const COLORS = [
   ['#f4777c', '#ffd1bf', '#d74f6a', 'Der Anfang'],
@@ -36,9 +38,9 @@ export function radiusForTier(tier) {
 }
 
 export class BallWorld {
-  constructor({ onMerge = () => {}, onGrow = () => {}, initialHeight = 510 } = {}) {
+  constructor({ onMerge = () => {}, onGameOver = () => {}, initialHeight = 510 } = {}) {
     this.onMerge = onMerge;
-    this.onGrow = onGrow;
+    this.onGameOver = onGameOver;
     this.initialHeight = initialHeight;
     this.engine = Engine.create({ enableSleeping: true, positionIterations: 10, velocityIterations: 8 });
     this.engine.gravity.y = 1.25;
@@ -68,7 +70,7 @@ export class BallWorld {
     this.dropTier = 0;
     this.largestTier = 0;
     this.dropCount = 0;
-    this.expansions = 0;
+    this.gameOver = false;
     this.walls = [];
     this.buildContainer();
   }
@@ -85,14 +87,6 @@ export class BallWorld {
     Composite.add(this.engine.world, this.walls);
   }
 
-  grow(minWidth = this.width * 1.28, minHeight = this.height * 1.28) {
-    this.width = Math.max(this.width, minWidth);
-    this.height = Math.max(this.height, minHeight);
-    this.buildContainer();
-    this.expansions++;
-    this.onGrow({ width: this.width, height: this.height });
-  }
-
   addBall(tier, x, y, velocity = { x: 0, y: 0 }) {
     const radius = radiusForTier(tier);
     const body = Bodies.circle(x, y, radius, {
@@ -106,30 +100,32 @@ export class BallWorld {
       label: `ball-${tier}`,
     }, 64);
     Body.setVelocity(body, velocity);
-    const ball = { body, tier, radius, born: this.time, entered: false };
+    const ball = { body, tier, radius, born: this.time, entered: false, overflowMs: 0 };
     this.balls.set(body.id, ball);
     Composite.add(this.engine.world, body);
     return ball;
   }
 
-  get canDrop() { return this.time - this.lastDrop >= 280; }
+  get canDrop() { return !this.gameOver && this.time - this.lastDrop >= 280; }
 
   get upgradeCost() { return 1000n * 2n ** BigInt(this.dropTier); }
 
-  get canUpgrade() { return this.score >= this.upgradeCost; }
+  get canUpgrade() { return !this.gameOver && this.score >= this.upgradeCost; }
 
   buyUpgrade() {
     if (!this.canUpgrade) return false;
     this.score -= this.upgradeCost;
     this.dropTier++;
-    this.ensureSpace();
     return true;
   }
 
   drop(fraction = 0.5) {
     if (!this.canDrop) return null;
-    this.ensureSpace();
     const radius = radiusForTier(this.dropTier);
+    if (radius * 2 > Math.min(this.width - 8, this.height)) {
+      this.endGame();
+      return null;
+    }
     const x = (Math.min(1, Math.max(0, fraction)) - 0.5) * (this.width - radius * 2 - 8);
     const y = -this.height - radius - 18;
     const ball = this.addBall(this.dropTier, x, y);
@@ -139,21 +135,8 @@ export class BallWorld {
     return ball;
   }
 
-  ensureSpace() {
-    const dropRadius = radiusForTier(this.dropTier);
-    let requiredWidth = Math.max(this.width, dropRadius * 5.5);
-    let highest = 0;
-    for (const ball of this.balls.values()) {
-      requiredWidth = Math.max(requiredWidth, ball.radius * 5.5);
-      if (ball.entered) highest = Math.min(highest, ball.body.position.y - ball.radius);
-    }
-    const requiredHeight = Math.max(this.height, -highest + dropRadius * 5, dropRadius * 6);
-    if (requiredWidth > this.width || requiredHeight > this.height) {
-      this.grow(Math.max(this.width * 1.22, requiredWidth), Math.max(this.height * 1.22, requiredHeight));
-    }
-  }
-
   step(delta = STEP_MS) {
+    if (this.gameOver) return;
     this.time += delta;
     Engine.update(this.engine, delta);
     // Consume after Engine.update: never mutate the physics world mid collision callback.
@@ -166,9 +149,26 @@ export class BallWorld {
       this.merge(a, b);
     }
     for (const ball of this.balls.values()) {
-      if (ball.body.position.y > -this.height + ball.radius * 3 + 65) ball.entered = true;
+      if (ball.radius * 2 > Math.min(this.width, this.height)) {
+        this.endGame();
+        break;
+      }
+      const top = ball.body.position.y - ball.radius;
+      if (top >= -this.height) ball.entered = true;
+      // Fresh throws start above the rim; give them time to enter the tub.
+      const eligible = ball.entered || this.time - ball.born >= DROP_ENTRY_GRACE_MS;
+      ball.overflowMs = eligible && top < -this.height - 2 ? ball.overflowMs + delta : 0;
+      if (ball.overflowMs >= OVERFLOW_GRACE_MS) {
+        this.endGame();
+        break;
+      }
     }
-    this.ensureSpace();
+  }
+
+  endGame() {
+    if (this.gameOver) return;
+    this.gameOver = true;
+    this.onGameOver();
   }
 
   merge(a, b) {
@@ -187,7 +187,6 @@ export class BallWorld {
       this.balls.delete(ball.body.id);
       Composite.remove(this.engine.world, ball.body);
     }
-    if (radius * 5.5 > this.width) this.grow(radius * 5.5, Math.max(this.height * 1.22, radius * 6));
     // Keep the new circle above the solid floor as its radius increases.
     const ball = this.addBall(tier, position.x, Math.min(-radius - 0.5, position.y), velocity);
     // The circle approximation can have a slightly different area: preserve exact input mass.
