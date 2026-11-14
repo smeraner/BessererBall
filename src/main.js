@@ -64,6 +64,7 @@ const world = new BallWorld({
     $('board-message').textContent = 'Das Spielfeld ist voll. Zeit für eine neue Runde.';
     messageUntil = 0;
     userPaused = false;
+    updateUpgrade();
     updatePause();
     $('game-over-restart').focus({ preventScroll: true });
   },
@@ -78,7 +79,7 @@ function paintBall(element, tier) {
 function updateStats() {
   $('score').textContent = formatPoints(world.score);
   $('score').classList.toggle('compact', world.score >= 100000n);
-  $('score').title = `${world.score.toLocaleString('de-DE')} Punkte`;
+  $('score').title = `${world.score.toLocaleString('de-DE')} Münzen`;
   $('score').classList.remove('score-bump');
   void $('score').offsetWidth;
   $('score').classList.add('score-bump');
@@ -106,10 +107,16 @@ function updateUpgrade() {
   $('next-ball').style.width = $('next-ball').style.height = `${Math.min(76, 46 + world.dropTier * 5)}px`;
   $('next-name').textContent = `${appearance(world.dropTier).name} · Stufe ${world.dropTier + 1}`;
   $('upgrade-level').textContent = `Wurf: Stufe ${world.dropTier + 1} → ${world.dropTier + 2}`;
-  $('upgrade-cost').textContent = `${formatPoints(world.upgradeCost)} ✦`;
-  $('upgrade-button').setAttribute('aria-label', `Wurf auf Stufe ${world.dropTier + 2} verbessern für ${world.upgradeCost.toLocaleString('de-DE')} Punkte`);
+  $('upgrade-cost').textContent = `${formatPoints(world.upgradeCost)} 🪙`;
+  $('upgrade-button').setAttribute('aria-label', `Wurf auf Stufe ${world.dropTier + 2} verbessern für ${world.upgradeCost.toLocaleString('de-DE')} Münzen`);
   $('upgrade-button').disabled = !view || userPaused || modalOpen || !world.canUpgrade;
-  $('upgrade-hint').textContent = world.gameOver ? 'Runde beendet. Starte eine neue Runde.' : world.canUpgrade ? 'Bereit für größere Würfe!' : `Noch ${formatPoints(world.upgradeCost - world.score)} Punkte bis zum Upgrade`;
+  $('upgrade-hint').textContent = world.gameOver ? 'Runde beendet. Starte eine neue Runde.' : world.canUpgrade ? 'Bereit für größere Würfe!' : `Noch ${formatPoints(world.upgradeCost - world.score)} Münzen bis zum Upgrade`;
+  $('expand-level').textContent = `Spielfeld · Stufe ${world.expansions + 1}`;
+  $('expand-cost').textContent = `${formatPoints(world.expansionCost)} 🪙`;
+  $('expand-button').setAttribute('aria-label', `Spielfeld für ${world.expansionCost.toLocaleString('de-DE')} Münzen vergrößern`);
+  $('expand-button').disabled = !view || userPaused || modalOpen || !world.canExpand;
+  $('expand-hint').textContent = world.gameOver ? 'Runde beendet. Starte eine neue Runde.' : world.canExpand ? '20 % mehr Breite und Höhe kaufen.' : `Noch ${formatPoints(world.expansionCost - world.score)} Münzen · +20 % Breite und Höhe`;
+  $('field-mode').textContent = world.expansions ? `FELD · STUFE ${world.expansions + 1}` : 'FESTES FELD';
 }
 function showMessage(text, duration) {
   $('board-message').textContent = text;
@@ -131,6 +138,7 @@ function updatePause() {
   $('pause-button').title = userPaused ? 'Weiterspielen (P)' : 'Pause (P)';
   $('drop-button').disabled = userPaused || modalOpen || !view || !world.canDrop;
   $('upgrade-button').disabled = userPaused || modalOpen || !view || !world.canUpgrade;
+  $('expand-button').disabled = userPaused || modalOpen || !view || !world.canExpand;
   heldKeys.clear();
   pointer = null;
   accumulator = 0;
@@ -217,6 +225,13 @@ async function start() {
     updateStats();
     showMessage(`Wurf verbessert! Ab jetzt wirfst du Bälle der Stufe ${world.dropTier + 1}.`, 4200);
   });
+  $('expand-button').addEventListener('click', () => {
+    if (userPaused || modalOpen || !world.buyExpansion()) return;
+    audio.unlock();
+    audio.tone(520, 0.18, 0.035);
+    updateStats();
+    showMessage('Spielfeld vergrößert! 20 % mehr Breite und Höhe.', 4200);
+  });
   for (const id of ['help-dialog', 'restart-dialog']) {
     $(id).addEventListener('close', () => { modalOpen = false; updatePause(); });
     $(id).addEventListener('click', (event) => { if (event.target === $(id)) {
@@ -290,6 +305,7 @@ async function start() {
     }
     $('drop-button').disabled = !running || !world.canDrop;
     $('upgrade-button').disabled = !running || !world.canUpgrade;
+    $('expand-button').disabled = !running || !world.canExpand;
     view.render(running ? delta : 0, aim, running && world.canDrop);
     requestAnimationFrame(frame);
   }

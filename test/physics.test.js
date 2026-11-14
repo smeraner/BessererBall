@@ -327,3 +327,92 @@ test('restart after game over clears overflow, upgrades and score and allows pla
   advance(world, 3);
   assert.equal(world.gameOver, false);
 });
+
+test('expansion requires enough coins, charges exactly once and doubles its own price', () => {
+  const world = new BallWorld();
+  const walls = [...world.walls];
+  assert.equal(world.expansionCost, 500n);
+  assert.equal(world.canExpand, false);
+  world.score = 499n;
+  assert.equal(world.buyExpansion(), false);
+  assert.equal(world.score, 499n);
+  assert.equal(world.expansions, 0);
+  assert.deepEqual(world.walls, walls);
+  world.score = 1500n;
+  world.earnedPoints = 1500n;
+  assert.equal(world.buyExpansion(), true);
+  assert.equal(world.score, 1000n);
+  assert.equal(world.expansionCost, 1000n);
+  near(world.width, 552);
+  near(world.height, 612);
+  assert.equal(world.buyExpansion(), true);
+  assert.equal(world.score, 0n);
+  assert.equal(world.expansionCost, 2000n);
+  assert.equal(world.buyExpansion(), false);
+  assert.equal(world.expansions, 2);
+  assert.equal(world.earnedPoints, 1500n);
+  assert.equal(world.dropTier, 0);
+});
+
+test('purchased space preserves balls and mass, rebuilds walls and clears impending overflow', () => {
+  const world = new BallWorld();
+  const ball = world.addBall(0, 0, -100, { x: 1, y: 2 });
+  world.step();
+  holdAboveRim(world, ball, 1400);
+  const before = { position: { ...ball.body.position }, velocity: { ...ball.body.velocity }, radius: ball.radius, mass: ball.body.mass };
+  const oldWalls = [...world.walls];
+  world.score = 500n;
+  assert.equal(world.buyExpansion(), true);
+  assert.equal(ball.overflowMs, 0);
+  assert.equal(world.balls.get(ball.body.id), ball);
+  assert.deepEqual(ball.body.position, before.position);
+  assert.deepEqual(ball.body.velocity, before.velocity);
+  assert.equal(ball.radius, before.radius);
+  assert.equal(ball.body.mass, before.mass);
+  const bodies = Matter.Composite.allBodies(world.engine.world);
+  for (const wall of oldWalls) assert.ok(!bodies.includes(wall));
+  for (const wall of world.walls) assert.ok(bodies.includes(wall));
+  assert.equal(bodies.length, 4);
+  advance(world, 2);
+  assert.equal(world.gameOver, false);
+  near(world.width, 552);
+  near(world.height, 612);
+});
+
+test('merges earn spendable coins shared by throw upgrades and field purchases', () => {
+  const world = new BallWorld();
+  world.merge(world.addBall(8, -10, -100), world.addBall(8, 10, -100));
+  assert.equal(world.score, 512n);
+  assert.equal(world.buyExpansion(), true);
+  assert.equal(world.score, 12n);
+  assert.equal(world.earnedPoints, 512n);
+  world.reset();
+  world.score = 1500n;
+  assert.equal(world.buyUpgrade(), true);
+  assert.equal(world.buyExpansion(), true);
+  assert.equal(world.score, 0n);
+  assert.equal(world.dropTier, 1);
+  assert.equal(world.expansions, 1);
+  assert.equal(world.upgradeCost, 2000n);
+  assert.equal(world.expansionCost, 1000n);
+});
+
+test('expansion is blocked after game over and restart restores the field and purchase price', () => {
+  const world = new BallWorld({ initialHeight: 260 });
+  world.score = 5000n;
+  assert.equal(world.buyExpansion(), true);
+  world.endGame();
+  const balance = world.score;
+  const width = world.width;
+  assert.equal(world.canExpand, false);
+  assert.equal(world.buyExpansion(), false);
+  assert.equal(world.score, balance);
+  assert.equal(world.width, width);
+  world.reset();
+  assert.equal(world.expansions, 0);
+  assert.equal(world.expansionCost, 500n);
+  assert.equal(world.width, 460);
+  assert.equal(world.height, 260);
+  assert.equal(world.score, 0n);
+  assert.equal(world.canExpand, false);
+});

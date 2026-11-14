@@ -32,9 +32,9 @@
         <div class="game-layout">
           <aside class="score-column" aria-label="Spielstatistik">
             <section class="score-card">
-              <div class="card-label"><span class="tiny-star">✦</span> DEINE PUNKTE</div>
+              <div class="card-label"><span class="tiny-star">🪙</span> DEINE MÜNZEN</div>
               <div class="score-value" id="score">0</div>
-              <div class="score-caption">Für größere Würfe ausgeben.</div>
+              <div class="score-caption">Für Würfe und mehr Platz ausgeben.</div>
               <div class="record-row"><span id="record-icon" aria-hidden="true"></span><span>Dein Rekord</span><strong id="best-score">0</strong></div>
             </section>
             <section class="largest-card">
@@ -48,7 +48,7 @@
 
           <section class="play-column" aria-label="Ballspiel">
             <div class="board-card" id="board-card">
-              <div class="board-toolbar"><span><i class="live-dot"></i> DEINE SPIELWIESE</span><span class="mode-pill">FESTES FELD</span></div>
+              <div class="board-toolbar"><span><i class="live-dot"></i> DEINE SPIELWIESE</span><span class="mode-pill" id="field-mode">FESTES FELD</span></div>
               <div id="game-surface" role="application" aria-label="Spielfeld. Mit links und rechts zielen, mit Leertaste oder dem Abwurfknopf werfen. Auf dem Bildschirm tippen oder ziehen und loslassen." tabindex="0">
                 <div class="loading" id="loading"><span class="loading-ball"></span>Die Bälle machen sich bereit …</div>
               </div>
@@ -63,8 +63,13 @@
             </div>
             <section class="upgrade-card" aria-label="Wurf verbessern">
               <span class="css-ball upgrade-ball" id="upgrade-ball" aria-hidden="true"></span>
-              <div class="upgrade-copy"><strong id="upgrade-level">Wurf: Stufe 1 → 2</strong><span id="upgrade-hint">Noch 1.000 Punkte bis zum Upgrade</span></div>
-              <button class="upgrade-button" id="upgrade-button" disabled><span>Verbessern ↑</span><strong id="upgrade-cost">1.000 ✦</strong></button>
+              <div class="upgrade-copy"><strong id="upgrade-level">Wurf: Stufe 1 → 2</strong><span id="upgrade-hint">Noch 1.000 Münzen bis zum Upgrade</span></div>
+              <button class="upgrade-button" id="upgrade-button" disabled><span>Verbessern ↑</span><strong id="upgrade-cost">1.000 🪙</strong></button>
+            </section>
+            <section class="upgrade-card" aria-label="Spielfeld vergrößern">
+              <span class="expand-icon" aria-hidden="true">⛶</span>
+              <div class="upgrade-copy"><strong id="expand-level">Spielfeld · Stufe 1</strong><span id="expand-hint">Noch 500 Münzen · +20 % Breite und Höhe</span></div>
+              <button class="upgrade-button" id="expand-button" disabled><span>Vergrößern</span><strong id="expand-cost">500 🪙</strong></button>
             </section>
             <p class="touch-hint">Tippen oder ziehen & loslassen, um einen Ball abzuwerfen.</p>
           </section>
@@ -85,13 +90,14 @@
       <ol>
         <li><strong>Such dir einen Platz.</strong><br />Bewege die Vorschau mit ← und →, der Maus oder deinem Finger.</li>
         <li><strong>Lass den Ball fallen.</strong><br />Tippe ins Feld, ziehe und lasse los, drücke die Leertaste oder „Ball abwerfen“.</li>
-        <li><strong>Verbinde gleiche Farben.</strong><br />Zwei gleiche Bälle werden zu einem größeren. Das gibt Punkte!</li>
-        <li><strong>Kauf dir größere Würfe.</strong><br />„Verbessern“ kostet erst 1.000, dann 2.000, 4.000 Punkte usw. Jeder Kauf erhöht die Stufe deiner folgenden Würfe. Die Punkte werden abgezogen; dein Rekord zählt alle erspielten Punkte.</li>
-        <li><strong>Nutze deinen Platz.</strong><br />Das Spielfeld bleibt gleich groß. Ragt ein Ball länger als 1,5 Sekunden über den Rand, endet die Runde. Neue Würfe bekommen zunächst Zeit zum Hineinfallen. Ein Ball, der größer als das Spielfeld ist, beendet die Runde sofort.</li>
+        <li><strong>Verbinde gleiche Farben.</strong><br />Zwei gleiche Bälle werden zu einem größeren. Das gibt Punkte und genauso viele Münzen!</li>
+        <li><strong>Kauf dir größere Würfe.</strong><br />„Verbessern“ kostet erst 1.000, dann 2.000, 4.000 Münzen usw. Jeder Kauf erhöht die Stufe deiner folgenden Würfe. Dein Rekord zählt alle erspielten Punkte.</li>
+        <li><strong>Kauf dir mehr Platz.</strong><br />„Vergrößern“ erweitert Breite und Höhe um jeweils 20 %. Der erste Kauf kostet 500 Münzen, danach verdoppelt sich der Preis. Beide Käufe verwenden dasselbe Münzguthaben. Das Spielfeld wächst nur durch diesen Kauf.</li>
+        <li><strong>Nutze deinen Platz.</strong><br />Ragt ein Ball länger als 1,5 Sekunden über den Rand, endet die Runde. Neue Würfe bekommen zunächst Zeit zum Hineinfallen. Ein Ball, der größer als das Spielfeld ist, beendet die Runde sofort.</li>
       </ol>
       <p class="dialog-footnote">P pausiert. Dein Punkterekord bleibt in diesem Browser gespeichert. Neustart setzt die Upgrades zurück. Ton ist freiwillig.</p><button class="primary-button" id="help-play">Los geht’s <span>→</span></button>
     </dialog>
-    <dialog id="restart-dialog"><span class="eyebrow">NOCH MAL VON KLEIN</span><h2>Platz für einen neuen Anfang?</h2><p>Die aktuellen Bälle, Punkte und Wurf-Upgrades werden zurückgesetzt. Dein Rekord bleibt erhalten.</p><div class="dialog-actions"><button class="secondary-button" id="cancel-restart">Weiterspielen</button><button class="primary-button" id="confirm-restart">Neu starten <span>↻</span></button></div></dialog>
+    <dialog id="restart-dialog"><span class="eyebrow">NOCH MAL VON KLEIN</span><h2>Platz für einen neuen Anfang?</h2><p>Bälle, Punkte, Münzen, Wurf-Upgrades und Spielfeld-Vergrößerungen werden zurückgesetzt. Dein Rekord bleibt erhalten.</p><div class="dialog-actions"><button class="secondary-button" id="cancel-restart">Weiterspielen</button><button class="primary-button" id="confirm-restart">Neu starten <span>↻</span></button></div></dialog>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

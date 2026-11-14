@@ -68,6 +68,7 @@ export class BallWorld {
     this.score = 0n;
     this.earnedPoints = 0n;
     this.dropTier = 0;
+    this.expansions = 0;
     this.largestTier = 0;
     this.dropCount = 0;
     this.gameOver = false;
@@ -116,6 +117,25 @@ export class BallWorld {
     if (!this.canUpgrade) return false;
     this.score -= this.upgradeCost;
     this.dropTier++;
+    return true;
+  }
+
+  get expansionCost() { return 500n * 2n ** BigInt(this.expansions); }
+
+  get canExpand() { return !this.gameOver && this.score >= this.expansionCost; }
+
+  buyExpansion() {
+    if (!this.canExpand) return false;
+    this.score -= this.expansionCost;
+    this.expansions++;
+    this.width *= 1.2;
+    this.height *= 1.2;
+    this.buildContainer();
+    for (const ball of this.balls.values()) {
+      ball.overflowMs = 0;
+      // Moving the side walls can remove a sleeping ball's support.
+      Matter.Sleeping.set(ball.body, false);
+    }
     return true;
   }
 

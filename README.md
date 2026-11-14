@@ -1,6 +1,6 @@
 # Besserer Ball
 
-Ein Browser-Spiel mit **PixiJS 8** und **Matter.js**. Bunte Kugeln mit zwölf lustigen Gesichtern verschmelzen bei gleicher Farbe zu größeren Bällen. Du beginnst mit kleinen roten Bällen und kannst mit Punkten größere Würfe kaufen. Das Spielfeld behält während der Runde seine ursprüngliche Größe. Bei Überfüllung endet die Runde; anschließend kannst du direkt neu starten.
+Ein Browser-Spiel mit **PixiJS 8** und **Matter.js**. Bunte Kugeln mit zwölf lustigen Gesichtern verschmelzen bei gleicher Farbe zu größeren Bällen. Dabei sammelst du Punkte und Münzen. Mit Münzen kaufst du größere Würfe oder über „Vergrößern“ mehr Platz im Spielfeld. Bei Überfüllung endet die Runde; anschließend kannst du direkt neu starten.
 
 **[Jetzt im Browser spielen](https://smeraner.github.io/BessererBall/)** · [GitHub-Projekt](https://github.com/smeraner/BessererBall)
 
@@ -33,18 +33,20 @@ Auf dem Smartphone im selben WLAN die unter `Network` angezeigte Adresse verwend
 | Ton | Lautsprecher oben rechts; standardmäßig aus |
 | Anleitung | Fragezeichen oben rechts |
 | Größere Würfe kaufen | „Verbessern“ unter dem Spielfeld |
+| Mehr Platz kaufen | „Vergrößern“ unter dem Spielfeld |
 
 ## Spielregeln
 
 - Zwei Bälle derselben Farbe ergeben einen Ball der nächsten Stufe. Die Farben wiederholen sich auch nach den ersten Stufen nicht zyklisch.
 - Die Fläche des neuen Balls entspricht der Summe der beiden alten Kreisflächen. Der Radius wächst deshalb jeweils um den Faktor √2.
 - Masse und linearer Impuls werden bei der Verschmelzung übernommen. Matter.js simuliert Schwerkraft, Rotation, Reibung, Kollisionen und das Abprallen. Die Simulation läuft mit festen Schritten von 1/120 Sekunde.
-- Eine Verschmelzung zu Stufe 2 bringt 2 Punkte, zu Stufe 3 bringt 4 Punkte usw. Punkte verwenden `BigInt`.
-- Das erste Wurf-Upgrade kostet 1.000 Punkte, das nächste 2.000, dann 4.000, 8.000 usw. Der Preis verdoppelt sich ohne feste Obergrenze. Jeder Kauf zieht den Preis vom verfügbaren Punktestand ab und erhöht die Stufe aller folgenden Würfe um eins. Vorhandene Bälle bleiben erhalten. Vorschau, Zielhilfe und Wurfphysik passen sich an die neue Größe an.
-- Der Rekord zählt die insgesamt erspielten Punkte einer Runde, auch wenn Punkte für Upgrades ausgegeben wurden. Neustart und Neuladen setzen die Wurf-Upgrades zurück.
+- Eine Verschmelzung zu Stufe 2 bringt 2 Punkte und 2 Münzen, zu Stufe 3 jeweils 4 usw. Beide Werte verwenden `BigInt`. Das Münzguthaben wird beim Kauf ausgegeben; die insgesamt erspielten Punkte zählen für den Rekord.
+- Das erste Wurf-Upgrade kostet 1.000 Münzen, das nächste 2.000, dann 4.000, 8.000 usw. Jeder Kauf zieht den Preis vom gemeinsamen Münzguthaben ab und erhöht die Stufe aller folgenden Würfe um eins. Vorhandene Bälle bleiben erhalten. Vorschau, Zielhilfe und Wurfphysik passen sich an die neue Größe an.
+- „Vergrößern“ kostet zunächst 500 Münzen, danach 1.000, 2.000 usw. Jeder Kauf vergrößert Breite und Höhe um jeweils 20 %. Bälle behalten ihre physikalische Größe und Position; die Ansicht zoomt sanft heraus. Die Preise von Wurf-Upgrades und Spielfeld-Vergrößerungen steigen unabhängig voneinander.
+- Der Rekord zählt die insgesamt erspielten Punkte einer Runde, auch wenn Münzen für Käufe ausgegeben wurden. Neustart und Neuladen setzen Wurf-Upgrades, Vergrößerungen und Münzen zurück.
 - Der Punkterekord und die Toneinstellung bleiben lokal in diesem Browser erhalten. Ein Neustart löscht den Rekord nicht. Der laufende Spielstand wird beim Neuladen zurückgesetzt.
 - Neue Bälle lassen sich alle 280 Millisekunden abwerfen. Pause, Dialoge und ein ausgeblendeter Browser-Tab unterbrechen die Simulation.
-- Breite und Höhe des Behälters bleiben während der Runde fest. Verschmelzungen, Wurf-Upgrades und Platzmangel vergrößern das Spielfeld nicht; die Ansicht zoomt dabei nicht heraus. Die Oberfläche passt sich weiterhin an die Bildschirmgröße an.
+- Das Spielfeld wächst ausschließlich durch den Kauf über „Vergrößern“. Verschmelzungen, Wurf-Upgrades und Platzmangel lösen keine automatische Vergrößerung aus. Die Oberfläche passt sich weiterhin an die Bildschirmgröße an.
 - Ragt ein Ball länger als 1,5 Sekunden über den oberen Rand, endet die Runde. Neue Würfe haben zunächst zwei Sekunden Zeit zum Hineinfallen; sobald sie ganz im Feld waren, gilt die normale Überfüllungsprüfung. Sinkt ein Ball rechtzeitig zurück, beginnt seine Frist beim nächsten Überstand neu. Verschmelzungen werden vor der Prüfung aufgelöst. Ein Ball, dessen Durchmesser die Breite oder Höhe des Feldes überschreitet, beendet die Runde sofort; ein zu großer Wurf wird nicht mehr erzeugt.
 - Nach dem Spielende stoppen Physik, Abwürfe und Upgrades. Die Anzeige zeigt die insgesamt erspielten Rundenpunkte und bietet „Neue Runde“ an. Der gespeicherte Rekord bleibt erhalten.
 
